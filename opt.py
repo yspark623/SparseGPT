@@ -329,6 +329,13 @@ if __name__ == '__main__':
                 break
         print(time.time() - tick)
 
+    # ys_add
+    # model weight profiling
+    for name, param in model.named_parameters():
+        torch.save(param.data, f"dense_weight_pt/{name}_weights.pt")
+    exit()
+    # end
+
     for dataset in ['wikitext2', 'ptb', 'c4']:
         dataloader, testloader = get_loaders(
             dataset, seed=args.seed, model=args.model, seqlen=model.seqlen
