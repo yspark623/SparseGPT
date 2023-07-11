@@ -108,74 +108,123 @@ def bin_fix(num, k):
     bin_cd = bin(num)
     return bin_cd[2:].zfill(k)
 
+def bin_to_byte(data):
+    bit_strings = [data[i:i+8] for i in range(0, len(data), 8)]
+    byte_list = [int(b,2) for b in bit_strings if len(b) == 8 ]
+    if len(bit_strings[-1])!=8:
+        shift_bit = 8 - len(bit_strings[-1])
+        byte_list.append(int(bit_strings[-1],2)<<shift_bit)
+    return byte_list
+
+
 def rle_encode_binary(string, k):
     count_list = []
     listc = [i for i in string]
     list8=[]
+    list16=[]
     for i in range(len(listc)):
         if i%2 ==0:
             list8.append(listc[i]+listc[i+1])
-    print(list8)
+    for i in range(len(list8)):
+        if i%2 ==0:
+            list16.append(list8[i]+list8[i+1])
+    #print(list8)
+    #print(list16)
+
+    lists = list16
 
     count = 0
     i = 0
     length_max = 0
-    previous_character = listc[0]
-    while (i <= len(listc) - 1):
-        while (listc[i] == previous_character):
+    length_acc = 0
+    run_cnt = 0
+    previous_character = lists[0]
+    while (i <= len(lists) - 1):
+        while (lists[i] == previous_character):
             i = i + 1
             count = count + 1
-            if i > len(listc) - 1:
+            if i > len(lists) - 1:
                 break
         x = [previous_character, count]
         length_max = max(length_max,count)
+        length_acc += count
         count_list.append(x)
-        if i > len(listc) - 1:
+        if i > len(lists) - 1:
             break
-        previous_character = listc[i]
+        previous_character = lists[i]
         count = 0
     max_bits = ((2**k) - 1)
     encode = ""
     for i in range(len(count_list)):
         if count_list[i][1] <= max_bits:
-            code = bin_fix(int(count_list[i][0], 16), 4)
+            code = bin_fix(int(count_list[i][0], 16), 16)
             encode = encode + code
             code = bin_fix(count_list[i][1], k)
             encode = encode + code
+            run_cnt +=1
         else:
             this = count_list[i][1]
             while(this != 0):
                 if this > max_bits:
-                    code = bin_fix(int(count_list[i][0], 16), 4)
+                    code = bin_fix(int(count_list[i][0], 16), 16)
                     encode = encode + code
                     code = bin_fix(max_bits, k)
                     encode = encode + code
                     this = this - max_bits
+                    run_cnt +=1
                 else:
-                    code = bin_fix(int(count_list[i][0], 16), 4)
+                    code = bin_fix(int(count_list[i][0], 16), 16)
                     encode = encode + code
                     code = bin_fix(this, k)
                     encode = encode + code
                     this = 0
+                    run_cnt +=1
 
-    print("Encoded Run Length Sequence is: ", encode)
-    print('org len', len(string))
-    print('encoded len', len(encode))
+    #print("Encoded Run Length Sequence is: ", encode)
+    #print('org len', len(string))
+    #print('encoded len', len(encode))
     print('length_max', length_max)
+    print('length_acc', length_acc)
+    print('run_cnt', run_cnt)
+    print('length_avg', length_acc/run_cnt)
     return [encode, k]
 
-def rle():
-    with open("tmp.bin","rb") as f:
+def rle_decode_binary(encoded, k):
+    #print(encoded)
+    #print(k)
+    encoded_bin = ""
+    for i in encoded:
+        encoded_bin = encoded_bin + bin_fix(int(i,16),4)
+    #print(encoded_bin)
+
+    seq_mas = []
+    while encoded_bin:
+        if len(encoded_bin) >= 16+k:
+            seq_mas.append(encoded_bin[:16+k])
+            encoded_bin = encoded_bin[16+k:]
+        else:
+            break
+    #print(seq_mas)
+    decode = ""
+    int_val = []
+    max_bits = ((2 ** k) - 1)
+    for i in range(len(seq_mas)):
+        length = int(seq_mas[i][16:17+k],2)
+        run = seq_mas[i][:16]*length
+        decode = decode + run
+    return decode
+
+def rle(input_file):
+    with open(input_file,"rb") as f:
         data = f.read().hex()
-        print(data)
+        #print(data)
     #data = "11111111111111111111"
-    rle_result, k = rle_encode_binary(data, 4)
-    bit_strings = [rle_result[i:i+8] for i in range(0, len(rle_result), 8)]
-    byte_list = [int(b,2) for b in bit_strings]
+    rle_result, k = rle_encode_binary(data, 2)
+
+    byte_list = bin_to_byte(rle_result)
 
     with open('byte.dat', 'wb') as f:
         f.write(bytearray(byte_list))
-    exit()
 
 def main(args):
     if args.convert_en == 'true':
@@ -183,7 +232,29 @@ def main(args):
     if args.size_log_en == 'true':
         make_size_log(args)
     #test()
-    rle()
+
+    #with open("sparse_weight_bin/model.decoder.layers.0.fc1.weight_weights.bin","rb") as f:
+    #with open("sparse_weight_bin/model.decoder.layers.0.fc2.weight_weights.bin","rb") as f:
+    #with open("sparse_weight_bin/model.decoder.layers.0.self_attn.k_proj.weight_weights.bin","rb") as f:
+    #with open("sparse_weight_bin/model.decoder.layers.0.self_attn.out_proj.weight_weights.bin","rb") as f:
+    #with open("sparse_weight_bin/model.decoder.layers.0.self_attn.q_proj.weight_weights.bin","rb") as f:
+    #with open("sparse_weight_bin/model.decoder.layers.0.self_attn.v_proj.weight_weights.bin","rb") as f:
+    with open("sparse_weight_bin/model.decoder.layers.0.final_layer_norm.weight_weights.bin","rb") as f:
+    #with open("tmp.bin","rb") as f:
+        data = f.read().hex()
+    rle_encode_result, k = rle_encode_binary(data, 4)
+    byte_list = bin_to_byte(rle_encode_result)
+    with open('byte.dat', 'wb') as f:
+        f.write(bytearray(byte_list))
+    print("encode_done")
+
+    #with open("byte.dat","rb") as f:
+    #    data = f.read().hex()
+    #rle_decode_result = rle_decode_binary(data, 4)
+    #byte_list = bin_to_byte(rle_decode_result)
+    #with open('decode.dat', 'wb') as f:
+    #    f.write(bytearray(byte_list))
+    
 
 if __name__ == '__main__':
     args = get_arguments()
