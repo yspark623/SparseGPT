@@ -214,17 +214,27 @@ def rle_decode_binary(encoded, k):
         decode = decode + run
     return decode
 
-def rle(input_file):
+def rle_profile(input_file):
+    length_bit = 4
     with open(input_file,"rb") as f:
         data = f.read().hex()
-        #print(data)
-    #data = "11111111111111111111"
-    rle_result, k = rle_encode_binary(data, 2)
+    rle_encode_result, k = rle_encode_binary(data, length_bit)
+    byte_list = bin_to_byte(rle_encode_result)
 
-    byte_list = bin_to_byte(rle_result)
+    output_file = input_file + ".rle"
 
-    with open('byte.dat', 'wb') as f:
+    with open(output_file, 'wb') as f:
         f.write(bytearray(byte_list))
+    print("raw size: {0} Byte".format(os.path.getsize(input_file)))
+    print("rle encoded size: {0} Byte".format(os.path.getsize(output_file)))
+
+    #with open(output_file, "rb") as f:
+    #    data = f.read().hex()
+    #rle_decode_result = rle_decode_binary(data, length_bit)
+    #byte_list = bin_to_byte(rle_decode_result)
+    #with open('decode.dat', 'wb') as f:
+    #    f.write(bytearray(byte_list))
+
 
 def main(args):
     if args.convert_en == 'true':
@@ -233,28 +243,14 @@ def main(args):
         make_size_log(args)
     #test()
 
-    #with open("sparse_weight_bin/model.decoder.layers.0.fc1.weight_weights.bin","rb") as f:
-    #with open("sparse_weight_bin/model.decoder.layers.0.fc2.weight_weights.bin","rb") as f:
-    #with open("sparse_weight_bin/model.decoder.layers.0.self_attn.k_proj.weight_weights.bin","rb") as f:
-    #with open("sparse_weight_bin/model.decoder.layers.0.self_attn.out_proj.weight_weights.bin","rb") as f:
-    #with open("sparse_weight_bin/model.decoder.layers.0.self_attn.q_proj.weight_weights.bin","rb") as f:
-    #with open("sparse_weight_bin/model.decoder.layers.0.self_attn.v_proj.weight_weights.bin","rb") as f:
-    with open("sparse_weight_bin/model.decoder.layers.0.final_layer_norm.weight_weights.bin","rb") as f:
-    #with open("tmp.bin","rb") as f:
-        data = f.read().hex()
-    rle_encode_result, k = rle_encode_binary(data, 4)
-    byte_list = bin_to_byte(rle_encode_result)
-    with open('byte.dat', 'wb') as f:
-        f.write(bytearray(byte_list))
-    print("encode_done")
-
-    #with open("byte.dat","rb") as f:
-    #    data = f.read().hex()
-    #rle_decode_result = rle_decode_binary(data, 4)
-    #byte_list = bin_to_byte(rle_decode_result)
-    #with open('decode.dat', 'wb') as f:
-    #    f.write(bytearray(byte_list))
-    
+    #rle_profile("tmp.bin")
+    #rle_profile("sparse_weight_bin/model.decoder.layers.0.fc1.weight_weights.bin")
+    #rle_profile("sparse_weight_bin/model.decoder.layers.0.fc2.weight_weights.bin")
+    #rle_profile("sparse_weight_bin/model.decoder.layers.0.self_attn.k_proj.weight_weights.bin")
+    #rle_profile("sparse_weight_bin/model.decoder.layers.0.self_attn.out_proj.weight_weights.bin")
+    rle_profile("sparse_weight_bin/model.decoder.layers.0.self_attn.q_proj.weight_weights.bin")
+    #rle_profile("sparse_weight_bin/model.decoder.layers.0.self_attn.v_proj.weight_weights.bin")
+    #rle_profile("sparse_weight_bin/model.decoder.layers.0.final_layer_norm.weight_weights.bin")
 
 if __name__ == '__main__':
     args = get_arguments()
