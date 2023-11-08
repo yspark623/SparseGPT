@@ -11,6 +11,8 @@ from typing import Any, List, Optional, Tuple, Union
 
 from transformers import OPTForCausalLM
 from collections import OrderedDict
+from functools import partial
+
 try:
     import wandb
     has_wandb = True
@@ -19,6 +21,7 @@ except:
 
 
 layer_num = 0
+nsample_num = 0
 layer_name =[]
  
 class MyOPTAttention(nn.Module):
@@ -358,11 +361,18 @@ class MyLM(OPTForCausalLM):
         )
 
 
-def save_activation(module, input, output):
+def save_activation(name, module, input, output):
     global layer_num
-    print(layer_num, module)
-    #torch.save(output, f'act/activation_out_layer_{layer_num}.pt')
-    layer_num +=1
+    global nsample_num
+    #print(layer_num, module)
+    nsample_num = nsample_num%256
+    if(nsample_num<256):
+        print("here")
+        print(layer_num, module)
+        torch.save(output, f'act_13b_c4_full/layer{layer_num}/activation_out_{name}_{nsample_num}.pt')
+    if(nsample_num==255):
+        layer_num +=1
+    nsample_num +=1
     #activations.append(output)
 
 def get_opt(model):
@@ -539,6 +549,10 @@ def opt_eval(model, testenc, dev, dataset: str, log_wandb: bool = False):
         except ValueError:
             pass
     layers[0] = layers[0].module
+    global layer_num
+    global nsampel_num
+    layer_num = 0
+    nsample_num = 0
 
     print("ys_end_embedding")
 
@@ -693,6 +707,8 @@ if __name__ == '__main__':
 
     model = get_opt(args.model)
     model.eval()
+    #print(model)
+    #exit()
 
     dataloader, testloader = get_loaders(
         args.dataset, nsamples=args.nsamples, seed=args.seed, model=args.model, seqlen=model.seqlen
@@ -714,8 +730,13 @@ if __name__ == '__main__':
     #exit()
     # end
 
-    for module in model.modules():
-        module.register_forward_hook(save_activation)
+    #for module in model.modules():
+    for name, module in model.named_modules():
+        #print(name, module)
+        #exit()
+        if type(module)==nn.ReLU:
+            print(name, module)
+            module.register_forward_hook(partial(save_activation, name))
 
     #for dataset in ['wikitext2', 'ptb', 'c4']:
     for dataset in ['c4']:
